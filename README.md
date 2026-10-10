@@ -8,5 +8,6 @@ Hack for Humanity Fall 2026, Atlanta.
 - Design spec: `docs/superpowers/specs/2026-10-10-covered-design.md`
 - UI brief (Avery): `docs/avery-ui-brief.md`
 - API brief (Gideon): `docs/gideon-api-brief.md`
+- API reference: `docs/api.md` (manual requests: `api.http`, or `./scripts/smoke.sh` against `npm run dev`)
 
 Code is written during the event's 2-hour build block. Everything here before then is spec and prep.

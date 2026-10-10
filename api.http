@@ -1,0 +1,122 @@
+# Manual API requests. Start the server with `npm run dev`, then click "Send Request"
+# above any request (VS Code REST Client extension, or any JetBrains IDE).
+# Reference: docs/api.md
+
+@base = http://localhost:3000
+
+### Hospitals
+GET {{base}}/api/hospitals
+
+### Maria at Piedmont: 143%, free, $0
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### Maria at Emory: 143%, free, conflict note present
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"emory","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### Johnsons at Emory: 244%, 35% discount, $6,110
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"emory","household_size":3,"annual_income":65000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### Johnsons at Piedmont: 244%, free
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":3,"annual_income":65000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### Darnell at Grady: 236%, sliding scale, bill_after null
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"grady","household_size":2,"annual_income":50000,"bill_amount":4200,"insurance_status":"uninsured","county":"DeKalb","state":"GA"}
+
+### Darnell in Cobb: same status, residency_ok false
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"grady","household_size":2,"annual_income":50000,"bill_amount":4200,"insurance_status":"uninsured","county":"Cobb","state":"GA"}
+
+### Emory underinsured at 150%: no_match
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"emory","household_size":3,"annual_income":40000,"bill_amount":9400,"insurance_status":"underinsured","county":"Fulton","state":"GA"}
+
+### Bill with cents at 35%: bill_after 6110.33
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"emory","household_size":3,"annual_income":65000,"bill_amount":9400.5,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### County with odd casing and spaces: residency_ok true
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"grady","household_size":2,"annual_income":50000,"bill_amount":4200,"insurance_status":"uninsured","county":" fulton ","state":"GA"}
+
+### String numbers, as a query-string client sends them: 200
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":"3","annual_income":"38000","bill_amount":"9400","insurance_status":"uninsured","county":"Fulton"}
+
+### ERROR: garbage income -> 400
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":3,"annual_income":"abc","bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### ERROR: blank income -> 400 (never read as 0)
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":3,"annual_income":" ","bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### ERROR: household size 3.5 -> 400
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"piedmont","household_size":3.5,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### ERROR: unknown hospital -> 404
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+{"hospital_id":"nowhere","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"}
+
+### ERROR: not JSON -> 400
+POST {{base}}/api/eligibility
+Content-Type: application/json
+
+not json
+
+### Application PDF for Maria at Piedmont (save the response to open it)
+POST {{base}}/api/application
+Content-Type: application/json
+
+{"input":{"hospital_id":"piedmont","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"},"applicant":{"full_name":"Maria Lopez","mailing_address":"123 Peachtree St\nAtlanta, GA 30303","phone":"404-555-0100","date_of_birth":"1988-04-12"}}
+
+### Application PDF for Darnell at Grady (sliding scale, no dollar figure)
+POST {{base}}/api/application
+Content-Type: application/json
+
+{"input":{"hospital_id":"grady","household_size":2,"annual_income":50000,"bill_amount":4200,"insurance_status":"uninsured","county":"DeKalb","state":"GA"},"applicant":{"full_name":"Darnell Brooks","mailing_address":"45 Main St\nDecatur, GA 30030","phone":"404-555-0101","date_of_birth":"1975-09-30"}}
+
+### Application PDF with a non-Latin name: 200, accents stripped
+POST {{base}}/api/application
+Content-Type: application/json
+
+{"input":{"hospital_id":"piedmont","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"},"applicant":{"full_name":"Nguyễn Văn An","mailing_address":"1 Buford Hwy\nDoraville, GA 30340","phone":"404-555-0102","date_of_birth":"1990-01-01"}}
+
+### ERROR: blank applicant phone -> 400
+POST {{base}}/api/application
+Content-Type: application/json
+
+{"input":{"hospital_id":"piedmont","household_size":3,"annual_income":38000,"bill_amount":9400,"insurance_status":"uninsured","county":"Fulton","state":"GA"},"applicant":{"full_name":"Maria Lopez","mailing_address":"123 Peachtree St","phone":"  ","date_of_birth":"1988-04-12"}}
