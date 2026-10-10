@@ -7,15 +7,15 @@ import { renderApplicationPdf } from "@/lib/pdf/generated";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  let body: { input?: unknown; applicant?: unknown };
+  let body: { input?: unknown; applicant?: unknown } | null;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Body must be JSON" }, { status: 400 });
   }
   try {
-    const input = parseInput(body.input);
-    const applicant = parseApplicant(body.applicant);
+    const input = parseInput(body?.input);
+    const applicant = parseApplicant(body?.applicant);
     const hospital = getHospital(input.hospital_id);
     if (!hospital) {
       return NextResponse.json({ error: `Unknown hospital: ${input.hospital_id}` }, { status: 404 });

@@ -60,3 +60,15 @@ describe("POST /api/application", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("POST /api/application robustness", () => {
+  it("renders a PDF for a name outside the Latin-1 font", async () => {
+    const res = await post({ input, applicant: { ...applicant, full_name: "Nguyễn Văn An 김민수" } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+  });
+  it("400s a JSON null body", async () => {
+    const res = await post(null);
+    expect(res.status).toBe(400);
+  });
+});

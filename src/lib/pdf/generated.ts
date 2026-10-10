@@ -6,6 +6,20 @@ const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const clip = (s: string) => (s.length > 90 ? s.slice(0, 87) + "..." : s);
 
+// Standard fonts only encode WinAnsi: strip accents, then replace anything still unencodable.
+function encodable(font: PDFFont, s: string): string {
+  return Array.from(s.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""))
+    .map((ch) => {
+      try {
+        font.encodeText(ch);
+        return ch;
+      } catch {
+        return "?";
+      }
+    })
+    .join("");
+}
+
 const INSURANCE_LABEL = {
   uninsured: "No insurance",
   underinsured: "Insured, unable to afford the bill",
@@ -29,7 +43,7 @@ export async function renderApplicationPdf(r: EligibilityResult, a: Applicant): 
 
   const line = (text: string, opts: { size?: number; font?: PDFFont; gap?: number; x?: number } = {}) => {
     const size = opts.size ?? 11;
-    page.drawText(clip(text), { x: opts.x ?? left, y, size, font: opts.font ?? font });
+    page.drawText(clip(encodable(font, text)), { x: opts.x ?? left, y, size, font: opts.font ?? font });
     y -= size + (opts.gap ?? 5);
   };
   const heading = (text: string) => {
@@ -61,15 +75,15 @@ export async function renderApplicationPdf(r: EligibilityResult, a: Applicant): 
   heading("Documents to include");
   for (const d of r.documents_required) {
     page.drawRectangle({ x: left, y: y - 1, width: 10, height: 10, borderWidth: 1, borderColor: rgb(0, 0, 0) });
-    page.drawText(clip(d), { x: left + 16, y, size: 11, font });
+    page.drawText(clip(encodable(font, d)), { x: left + 16, y, size: 11, font });
     y -= 16;
   }
 
   heading("Where to send");
   line(r.mailing_address ?? "See the hospital's financial assistance policy for the mailing address.");
 
-  page.drawText(clip(`Figures from ${r.hospital_name}'s financial assistance policy (${r.policy_date}).`), { x: left, y: 52, size: 8, font });
-  page.drawText(clip(r.source_url), { x: left, y: 42, size: 8, font });
+  page.drawText(clip(encodable(font, `Figures from ${r.hospital_name}'s financial assistance policy (${r.policy_date}).`)), { x: left, y: 52, size: 8, font });
+  page.drawText(clip(encodable(font, r.source_url)), { x: left, y: 42, size: 8, font });
   page.drawText("Final eligibility is determined by the hospital.", { x: left, y: 32, size: 8, font });
 
   return doc.save();

@@ -3,7 +3,9 @@ import type { Applicant, EligibilityInput, InsuranceStatus } from "./types";
 
 type Obj = Record<string, unknown>;
 const obj = (x: unknown): Obj => (x && typeof x === "object" ? (x as Obj) : {});
-const num = (x: unknown): number => (x === "" || x === null || x === undefined ? NaN : Number(x));
+const NUMERIC = /^\s*-?\d+(\.\d+)?\s*$/;
+const num = (x: unknown): number =>
+  typeof x === "number" ? x : typeof x === "string" && NUMERIC.test(x) ? Number(x) : NaN;
 const str = (x: unknown): string => (x === null || x === undefined ? "" : String(x));
 
 export function parseInput(body: unknown): EligibilityInput {

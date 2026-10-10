@@ -58,3 +58,16 @@ describe("POST /api/eligibility", () => {
     expect((await res.json()).error).toMatch(/JSON/);
   });
 });
+
+describe("POST /api/eligibility coercion", () => {
+  it("400s whitespace income instead of reading it as 0", async () => {
+    const res = await post({ ...maria, annual_income: " " });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/annual_income/);
+  });
+  it("400s a boolean household_size instead of reading it as 1", async () => {
+    const res = await post({ ...maria, household_size: true });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/household_size/);
+  });
+});
