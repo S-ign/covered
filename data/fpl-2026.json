@@ -1,0 +1,11 @@
+{
+  "year": 2026,
+  "source_url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines",
+  "verified": false,
+  "note": "PLACEHOLDER: 2025 figures. Replace with 2026 HHS guidelines.",
+  "by_size": {
+    "1": 15650, "2": 21150, "3": 26650, "4": 32150,
+    "5": 37650, "6": 43150, "7": 48650, "8": 54150
+  },
+  "additional_person": 5500
+}
