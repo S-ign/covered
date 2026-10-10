@@ -136,6 +136,8 @@ export interface EligibilityResult {
   household_size: number;
   annual_income: number;
   insurance_status: InsuranceStatus;
+  county: string;
+  state: string;
   fpl_base: number;                // FPL dollar figure for this household size
   fpl_pct: number;                 // whole number
   tier_matched: Tier | null;
@@ -182,7 +184,8 @@ export interface ApplicationRequest {
    - `discount_pct === 100`: `status = "free"`, `bill_after = 0`
    - otherwise: `status = "discounted"`, `bill_after = round2(bill_amount * (1 - discount_pct / 100))` where `round2` rounds to cents
 6. **Residency.** `type none` is always ok. `type state`: `values` includes `input.state`. `type county`: `values` includes `input.county`, case-insensitive, trimmed. Residency never changes status or bill. It sets `residency_ok` and the UI shows a warning.
-7. Copy `documents_required`, `application_url`, `mailing_address`, `policy_url` as `source_url`, `policy_date`, `policy_conflicts`, `verified` from the hospital onto the result.
+7. Copy `documents_required`, `application_url`, `mailing_address`, `policy_url` as `source_url`, `policy_date`, `policy_conflicts`, `verified` from the hospital onto the result. Copy `household_size`, `annual_income`, `insurance_status`, `county`, `state`, and `bill_amount` (as `bill_before`) from the input.
+8. **Data loading.** `src/lib/data.ts` imports `data/hospitals.json` and `data/fpl-2026.json` statically. Next.js dev reloads JSON imports on change, and static imports are always bundled on Vercel. Do not read `data/` with `fs` at request time.
 
 ### 5.3 FPL table (`data/fpl-2026.json`)
 

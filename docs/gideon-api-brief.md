@@ -41,7 +41,7 @@ Then `src/lib/engine.ts`:
 - `export function computeEligibility(input: EligibilityInput, hospital: HospitalPolicy, fpl: FplTable): EligibilityResult` following spec 5.2 step by step.
 - `export class ValidationError extends Error {}` so the API can map it to 400.
 
-`src/lib/data.ts`: `getHospitals()`, `getHospital(id)`, `getFplTable()`. Read the JSON files with `fs` so the data owner's overwrite is picked up without a rebuild in dev.
+`src/lib/data.ts`: `getHospitals()`, `getHospital(id)`, `getFplTable()`. Static `import` of the two JSON files. Next dev reloads them on change, and static imports are always bundled on Vercel.
 
 `scripts/validate-data.ts` per spec 5.4 checks. Exit 1 on any failure with the failing path printed.
 
