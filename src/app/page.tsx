@@ -1,20 +1,12 @@
-"use client";
+import { Suspense } from "react";
+import { Landing } from "@/components/Landing";
+import { IntakeWizard } from "@/components/IntakeWizard";
+import { HomeSwitch } from "@/components/HomeSwitch";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { HospitalPolicy, InsuranceStatus } from "@/lib/types";
-
-const COUNTIES = ["Fulton", "DeKalb", "Cobb", "Gwinnett", "Clayton", "Other"];
-
-export default function IntakePage() {
-  const router = useRouter();
-  const [hospitals, setHospitals] = useState<HospitalPolicy[]>([]);
-  const [hospital, setHospital] = useState("piedmont");
-  const [size, setSize] = useState("3"); const [income, setIncome] = useState("38000");
-  const [insurance, setInsurance] = useState<InsuranceStatus>("uninsured");
-  const [county, setCounty] = useState("Fulton"); const [bill, setBill] = useState("9400"); const [loading, setLoading] = useState(true);
-  useEffect(() => { fetch("/api/hospitals").then((r) => r.json()).then((d) => setHospitals(d.hospitals ?? [])).catch(() => setHospitals([])).finally(() => setLoading(false)); }, []);
-  const valid = Number.isInteger(Number(size)) && Number(size) >= 1 && Number(size) <= 20 && Number(income) >= 0 && Number(bill) > 0;
-  function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); if (!valid || !hospital) return; const params = new URLSearchParams({ hospital, size, income, insurance, county, bill }); router.push(`/result?${params.toString()}`); }
-  return <div><p className="eyebrow">A clearer first step</p><h1 className="display-title">Find out what the policy may say you owe.</h1><p className="lede">Tell us about the bill. We&apos;ll compare your situation with the hospital&apos;s published financial assistance policy.</p><form onSubmit={submit} className="form-layout"><section className="form-section" aria-labelledby="bill-section"><h2 id="bill-section">About the bill</h2><div className="field-group"><label className="field-label" htmlFor="hospital">Which hospital sent the bill?</label><select id="hospital" className="field-control" value={hospital} onChange={(e) => setHospital(e.target.value)} disabled={loading || hospitals.length === 0}>{hospitals.length === 0 && <option value="">Loading hospitals…</option>}{hospitals.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><div className="field-group"><label className="field-label" htmlFor="bill">How much is the bill?</label><div className="money-wrap"><span className="money-sign" aria-hidden="true">$</span><input id="bill" className="field-control" type="number" min="1" step="0.01" value={bill} onChange={(e) => setBill(e.target.value)} /></div></div></section><section className="form-section" aria-labelledby="household-section"><h2 id="household-section">About your household</h2><div className="field-group"><label className="field-label" htmlFor="size">How many people live in your household?</label><span className="field-help">Include yourself and anyone whose income is counted with yours.</span><input id="size" className="field-control" type="number" min="1" max="20" step="1" value={size} onChange={(e) => setSize(e.target.value)} /></div><div className="field-group"><label className="field-label" htmlFor="income">Total household income per year, before taxes</label><div className="money-wrap"><span className="money-sign" aria-hidden="true">$</span><input id="income" className="field-control" type="number" min="0" value={income} onChange={(e) => setIncome(e.target.value)} /></div></div><fieldset className="field-group"><legend className="field-label">Do you have health insurance?</legend><div className="choice-list"><label className="choice"><input type="radio" name="insurance" checked={insurance === "uninsured"} onChange={() => setInsurance("uninsured")} /> <span>No insurance</span></label><label className="choice"><input type="radio" name="insurance" checked={insurance === "underinsured"} onChange={() => setInsurance("underinsured")} /> <span>I have insurance but can&apos;t afford the bill</span></label></div></fieldset><div className="field-group"><label className="field-label" htmlFor="county">What county do you live in?</label><select id="county" className="field-control" value={county} onChange={(e) => setCounty(e.target.value)}>{COUNTIES.map((item) => <option key={item}>{item}</option>)}</select></div></section><div><button className="primary-button" type="submit" disabled={!valid || loading}>See what the policy says</button><p className="quiet-note">Nonprofit hospitals are required by federal law to offer financial assistance. We read their policies so you don&apos;t have to.</p></div></form></div>;
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="shell page-pad"><p className="loading-line">Getting things ready…</p></div>}>
+      <HomeSwitch landing={<Landing />} intake={<IntakeWizard />} />
+    </Suspense>
+  );
 }
