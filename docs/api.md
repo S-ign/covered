@@ -187,3 +187,89 @@ Errors are checked in this order:
 npm run validate:data   # checks data/hospitals.json and data/fpl-2026.json
 npm test                # engine, validation, API and PDF tests
 ```
+
+---
+
+## Fillable hospital forms (preview)
+
+> **Preview only.** These routes are on for local development and Vercel Preview deployments. On Vercel Production they answer `404 {"error":"Not found"}` unless `ENABLE_FORMS_API=1` is set on purpose. They are not used by the site yet.
+
+Unlike `POST /api/application` (our own one-page summary), these routes fill **the hospital's own fillable application PDF** (`data/forms/piedmont.pdf`, `emory.pdf`, `grady.pdf`) using its real AcroForm field names. The PDF stays editable by default so the applicant can check it and sign. Signatures, witness lines, signature dates and office-use boxes are never filled.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/forms` | Hospitals that have a fillable form |
+| GET | `/api/forms/{hospital}` | The questions for that form: sections, fields, types, options, required flags |
+| POST | `/api/forms/{hospital}/validate` | Check answers; lists what is missing or wrong. No PDF |
+| POST | `/api/forms/{hospital}` | Returns the filled PDF |
+
+`{hospital}` is `piedmont`, `emory` or `grady`. Responses carry `x-robots-tag: noindex` and `cache-control: no-store`. Nothing is stored; answers exist only for the length of the request.
+
+### Request body (fill and validate)
+
+```json
+{
+  "input": { "hospital_id": "piedmont", "household_size": 3, "annual_income": 38000, "bill_amount": 9400,
+             "insurance_status": "uninsured", "county": "Fulton", "state": "GA" },
+  "answers": {
+    "patient_name": "Lopez, Maria",
+    "date_of_birth": "1988-04-12",
+    "physical_address": "123 Peachtree St NE",
+    "city": "Atlanta", "state": "GA", "zip": "30303",
+    "phone": "404-555-0100",
+    "household_members": [
+      { "name": "Lopez, Maria", "date_of_birth": "1988-04-12", "age": 38, "relation": "Self", "annual_income": 38000 }
+    ],
+    "has_medicaid": false
+  },
+  "draft": false,
+  "flatten": false
+}
+```
+
+- `answers` uses the keys returned by `GET /api/forms/{hospital}`. Unknown keys are rejected so a typo cannot silently drop data.
+- `input` is optional. When given it must be valid like `POST /api/eligibility` and its `hospital_id` must match the URL. It pre-fills what we already know (state, county, household income or size, and "has health insurance" for Piedmont). Anything in `answers` overrides it.
+- `draft: true` skips the required-field check so a half-finished form can still be downloaded.
+- `flatten: true` burns the answers into the page. The default keeps the PDF fillable.
+
+### Value formats
+
+| Type | Accepts | Printed as |
+|---|---|---|
+| `date` | `1988-04-12` or `04/12/1988` | `04/12/1988` |
+| `ssn` | 9 digits, spaces or dashes allowed | `123-45-6789` |
+| `phone` | 10-digit US number, `+1` allowed | `404-555-0100` |
+| `zip` | `30303` or `30303-1234` | as given |
+| `state` | 2 letters | upper case |
+| `money` | `38000`, `$38,000.5` | `38,000` or `38,000.50` |
+| `integer` | whole number 0-999 | as given |
+| `yesno` | `true`/`false`/`"yes"`/`"no"` | selects Yes or No |
+| `choice` | one option `value` | ticks that box |
+| `multichoice` | list of option `value`s | ticks those boxes |
+| `text` | up to 120 characters (220 multiline) | accents removed, unsupported characters printed as `?` |
+
+### Errors
+
+| Case | Status | Body |
+|---|---|---|
+| Unknown hospital | 404 | `{ "error": "Unknown hospital form: <id>" }` |
+| Body not JSON / not an object | 400 | `{ "error": "Body must be JSON" }` |
+| `input` invalid or for another hospital | 400 | same messages as `/api/eligibility` |
+| Answers missing or malformed | 400 | `{ "error": "Some answers need fixing", "problems": ["Patient full name: required", "Phone number: must be a 10-digit US phone number"] }` |
+
+`/validate` always returns `200` with `{ ok, missing_required, problems, can_download_draft }`.
+
+```bash
+curl -s localhost:3000/api/forms/piedmont -H 'content-type: application/json' -o piedmont.pdf -d '{
+  "input": { "hospital_id": "piedmont", "household_size": 3, "annual_income": 38000, "bill_amount": 9400,
+             "insurance_status": "uninsured", "county": "Fulton", "state": "GA" },
+  "answers": { "patient_name": "Lopez, Maria", "date_of_birth": "1988-04-12", "physical_address": "123 Peachtree St NE",
+               "city": "Atlanta", "zip": "30303", "phone": "404-555-0100" }
+}'
+```
+
+### Adding or changing a form
+
+Field mappings live in `src/lib/forms/definitions.ts`. `npm run pdf:fields data/forms/<id>.pdf` lists a PDF's real field names. `tests/forms.test.ts` fails if a PDF field is neither mapped nor listed in that form's `skip` (with a reason), or if a mapping names a field the PDF does not have.
+
+Known limits: the three PDFs were supplied as-is. Grady's PDF reuses the `CITY`/`STATE`/`ZIP` field names on page 2 for the emergency contact, so those widgets are drawn separately. Piedmont's household table has 4 rows. Piedmont's second box under "Describe below:" and Grady's unlabelled spouse-income line are left blank because the forms do not say what goes there.
